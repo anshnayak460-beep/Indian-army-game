@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Indian Army Commando Runner 3D</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  overflow: hidden;
+  background: #07140b;
+  font-family: Arial, sans-serif;
+  color: white;
+  touch-action: none;
+}
+
+canvas {
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.brand {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 90%;
+  font-size: clamp(17px, 4vw, 28px);
+  font-weight: 900;
+  color: #ffe36b;
+  text-shadow: 2px 3px 4px black;
+}
+
+.brand small {
+  display: block;
+  color: white;
+  font-size: 11px;
+  margin-top: 4px;
+  letter-spacing: 3px;
+}
+
+.stats {
+  position: absolute;
+  top: 15px;
+  left: 12px;
+  padding: 10px 13px;
+  background: #07140bdc;
+  border: 1px solid #9da879;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+#pause {
+  position: absolute;
+  top: 15px;
+  right: 12px;
+  pointer-events: auto;
+  background: #12251bdc;
+  color: white;
+  border: 1px solid #b5c7a1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 19px;
+}
+
+#mission {
+  position: absolute;
+  top: 105px;
+  left: 12px;
+  font-size: 12px;
+  background: #07140bdc;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border-left: 3px solid #e6c34a;
+}
+
+#message {
+  position: absolute;
+  top: 39%;
+  width: 100%;
+  text-align: center;
+  display: none;
+  pointer-events: auto;
+  background: #07140be8;
+  padding: 25px 12px;
+}
+
+#message h2 {
+  color: #ffe36b;
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
+#message p {
+  margin-bottom: 18px;
+}
+
+#restart {
+  border: 0;
+  padding: 13px 25px;
+  border-radius: 10px;
+  background: #e3b82f;
+  font-weight: bold;
+  font-size: 16px;
+  color: #17210d;
+}
+
+#controls {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  padding: 0 18px;
+}
+
+.group {
+  display: flex;
+  gap: 12px;
+}
+
+.ctrl {
+  width: clamp(57px, 17vw, 78px);
+  height: clamp(57px, 17vw, 78px);
+  border-radius: 50%;
+  border: 2px solid #ffffffcc;
+  background: #101d1bc9;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  box-shadow: 0 3px 12px #0008;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#jump {
+  width: clamp(67px, 19vw, 88px);
+  height: clamp(67px, 19vw, 88px);
+  background: #a77d15dd;
+}
+
+.hint {
+  position: absolute;
+  bottom: 115px;
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  color: white;
+  text-shadow: 1px 2px 3px black;
+}
+
+@media (max-height: 500px) {
+  #controls { bottom: 8px; }
+  .ctrl { width: 52px; height: 52px; }
+  #jump { width: 60px; height: 60px; }
+  #mission { top: 82px; }
+  .hint { bottom: 78px; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="hud">
+
+  <div class="brand">
+    🇮🇳 INDIAN ARMY RUNNER 3D
+    <small>DREAM • TRAIN • ACHIEVE</small>
+  </div>
+
+  <div class="stats">
+    🏆 SCORE: <span id="score">0</span><br>
+    🪙 COINS: <span id="coins">0</span>
+  </div>
+
+  <button id="pause">Ⅱ</button>
+
+  <div id="mission">
+    🎯 MISSION: REACH THE BASE<br>
+    Avoid obstacles and collect coins!
+  </div>
+
+  <div id="message">
+    <h2 id="endTitle">MISSION FAILED!</h2>
+    <p>Score: <span id="finalScore">0</span></p>
+    <button id="restart">🔄 PLAY AGAIN</button>
+  </div>
+
+  <div class="hint">
+    Swipe left/right or use buttons • Tap JUMP to jump
+  </div>
+
+  <div id="controls">
+    <div class="group">
+      <button class="ctrl" id="left" aria-label="Move left">◀</button>
+      <button class="ctrl" id="right" aria-label="Move right">▶</button>
+    </div>
+    <button class="ctrl" id="jump" aria-label="Jump">⬆</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+<script>
+(() => {
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+if (!window.THREE) {
+  document.body.innerHTML =
+    "<h2 style='padding:30px'>3D library could not load. Check your internet and reload this page.</h2>";
+  return;
+}
+
+// ---------- SCENE ----------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8cc8f0);
+scene.fog = new THREE.Fog(0x8cc8f0, 35, 125);
+
+const camera = new THREE.PerspectiveCamera(
+  65, innerWidth / innerHeight, 0.1, 250
+);
+camera.position.set(0, 5.5, 10);
+camera.lookAt(0, 1, -6);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance"
+});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = false;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xdaf0ff, 0x354522, 2));
+
+const sun = new THREE.DirectionalLight(0xffffff, 2);
+sun.position.set(-8, 15, 8);
+scene.add(sun);
+
+// ---------- MATERIALS ----------
+function mat(color, roughness = 1) {
+  return new THREE.MeshStandardMaterial({ color, roughness });
+}
+
+const grassMat = mat(0x456b32);
+const roadMat = mat(0x62665d);
+const whiteMat = mat(0xe3ddbd);
+const darkMat = mat(0x29352a);
+const uniformMat = mat(0x566342);
+const helmetMat = mat(0x39482d);
+const skinMat = mat(0xa9754d);
+const goldMat = new THREE.MeshStandardMaterial({
+  color: 0xffc928,
+  metalness: 0.65,
+  roughness: 0.25,
+  emissive: 0x4a2800
+});
+
+// ---------- OBJECT HELPERS ----------
+function box(parent, x, y, z, w, h, d, material) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d), material
+  );
+  mesh.position.set(x, y, z);
+  parent.add(mesh);
+  return mesh;
+}
+
+function sphere(parent, x, y, z, r, material) {
+  const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(r, 12, 10), material
+  );
+  mesh.position.set(x, y, z);
+  parent.add(mesh);
+  return mesh;
+}
+
+function cylinder(parent, x, y, z, rt, rb, h, material) {
+  const mesh = new THREE.Mesh(
+    new THREE.CylinderGeometry(rt, rb, h, 8), material
+  );
+  mesh.position.set(x, y, z);
+  parent.add(mesh);
+  return mesh;
+}
+
+// ---------- ENVIRONMENT ----------
+box(scene, 0, -0.65, -45, 200, 0.3, 200, grassMat);
+box(scene, 0, -0.43, -45, 7, 0.15, 200, roadMat);
+
+// Road edges
+box(scene, -3.65, -0.34, -45, 0.15, 0.1, 200, whiteMat);
+box(scene, 3.65, -0.34, -45, 0.15, 0.1, 200, whiteMat);
+
+// Road markings
+const markings = [];
+for (let z = -115; z < 12; z += 7) {
+  markings.push(box(scene, 0, -0.33, z, 0.09, 0.03, 3, whiteMat));
+}
+
+// Hills and mountains
+const mountainMat = mat(0x627d79);
+const mountainMat2 = mat(0x879d9a);
+
+for (let i = 0; i < 22; i++) {
+  const side = i % 2 ? -1 : 1;
+  const x = side * (9 + Math.random() * 20);
+  const z = -10 - Math.random() * 115;
+  const height = 5 + Math.random() * 13;
+
+  const mountain = new THREE.Mesh(
+    new THREE.ConeGeometry(4 + Math.random() * 7, height, 5),
+    i % 2 ? mountainMat : mountainMat2
+  );
+
+  mountain.position.set(x, height / 2 - 1, z);
+  scene.add(mountain);
+}
+
+// Trees
+const trees = [];
+
+function makeTree(x, z) {
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
+
+  cylinder(g, 0, 1.1, 0, 0.18, 0.28, 2.2, mat(0x60472b));
+
+  sphere(g, 0, 2.6, 0, 1.25, mat(0x315d2c));
+  sphere(g, -0.5, 3.1, 0.1, 0.85, mat(0x3e7135));
+  sphere(g, 0.55, 3.05, -0.1, 0.85, mat(0x294e28));
+
+  scene.add(g);
+  trees.push(g);
+}
+
+for (let z = -110; z < 12; z += 8) {
+  makeTree(-5.8 - Math.random() * 2, z);
+  makeTree(5.8 + Math.random() * 2, z - 3);
+}
+
+// Army camp at the far end
+const camp = new THREE.Group();
+camp.position.set(0, 0, -68);
+scene.add(camp);
+
+box(camp, 0, 2.1, 0, 8.2, 0.2, 0.2, darkMat);
+box(camp, -4, 1, 0, 0.2, 2, 0.2, darkMat);
+box(camp, 4, 1, 0, 0.2, 2, 0.2, darkMat);
+
+const gateText = document.createElement("canvas");
+gateText.width = 512;
+gateText.height = 128;
+const ctx = gateText.getContext("2d");
+ctx.fillStyle = "#263b27";
+ctx.fillRect(0, 0, 512, 128);
+ctx.fillStyle = "#ffffff";
+ctx.font = "bold 54px Arial";
+ctx.textAlign = "center";
+ctx.fillText("ARMY BASE", 256, 80);
+
+const gateTexture = new THREE.CanvasTexture(gateText);
+const gateSign = new THREE.Mesh(
+  new THREE.PlaneGeometry(5, 1.25),
+  new THREE.MeshBasicMaterial({ map: gateTexture })
+);
+gateSign.position.set(0, 2.1, 0.15);
+camp.add(gateSign);
+
+// ---------- COMMANDO ----------
+const player = new THREE.Group();
+player.position.set(0, 0, 2);
+scene.add(player);
+
+const soldier = new THREE.Group();
+player.add(soldier);
+
+// Torso
+box(soldier, 0, 1.2, 0, 0.72, 0.9, 0.42, uniformMat);
+
+// Tactical vest
+box(soldier, 0, 1.28, -0.23, 0.56, 0.65, 0.16, darkMat);
+
+// Backpack
+box(soldier, 0, 1.35, 0.3, 0.48, 0.65, 0.24, helmetMat);
+
+// Head
+sphere(soldier, 0, 1.94, 0, 0.25, skinMat);
+
+// Helmet
+sphere(soldier, 0, 2.1, -0.015, 0.29, helmetMat);
+box(soldier, 0, 1.99, -0.21, 0.4, 0.07, 0.1, helmetMat);
+
+// Legs and arms animate at the joints
+const legs = [];
+const arms = [];
+
+function makeLimb(x, y, length, material, isArm) {
+  const pivot = new THREE.Group();
+  pivot.position.set(x, y, 0);
+  soldier.add(pivot);
+
+  const limb = box(
+    pivot, 0, -length / 2, 0,
+    isArm ? 0.2 : 0.24,
+    length,
+    0.23,
+    material
+  );
+
+  sphere(
+    pivot, 0, -length, -0.01,
+    isArm ? 0.12 : 0.13,
+    isArm ? skinMat : darkMat
+  );
+
+  if (isArm) arms.push(pivot);
+  else legs.push(pivot);
+
+  return pivot;
+}
+
+makeLimb(-0.22, 0.86, 0.48, uniformMat, false);
+makeLimb(0.22, 0.86, 0.48, uniformMat, false);
+makeLimb(-0.47, 1.55, 0.53, uniformMat, true);
+makeLimb(0.47, 1.55, 0.53, uniformMat, true);
+
+// ---------- GAME OBJECTS ----------
+const lanes = [-2.25, 0, 2.25];
+
+let objects = [];
+let lane = 1;
+let score = 0;
+let coins = 0;
+let speed = 18;
+let elapsed = 0;
+let spawnTimer = 0;
+let coinTimer = 0;
+let jumpVelocity = 0;
+let running = true;
+let paused = false;
+let gameOver = false;
+let lastTime = 0;
+
+const obstacleMat = mat(0x9a6136);
+const obstacleDark = mat(0x51402e);
+
+function addObstacle() {
+  const x = lanes[Math.floor(Math.random() * 3)];
+  const g = new THREE.Group();
+  g.position.set(x, 0, -75);
+
+  const kind = Math.random();
+
+  if (kind < 0.5) {
+    // Wooden crate
+    box(g, 0, 0.6, 0, 1.05, 1.2, 0.9, obstacleMat);
+    box(g, 0, 0.6, -0.47, 0.08, 1.05, 0.03, obstacleDark);
+    box(g, 0, 0.6, 0.47, 0.08, 1.05, 0.03, obstacleDark);
+  } else {
+    // Road barricade
+    box(g, 0, 0.65, 0, 1.5, 1.3, 0.35, obstacleDark);
+    box(g, 0, 1.1, -0.2, 1.5, 0.18, 0.1, mat(0xe5c648));
+    box(g, 0, 0.55, -0.2, 1.5, 0.18, 0.1, mat(0xe5c648));
+  }
+
+  scene.add(g);
+  objects.push({ mesh: g, type: "obstacle", hit: false });
+}
+
+function addCoin() {
+  const x = lanes[Math.floor(Math.random() * 3)];
+  const g = new THREE.Group();
+  g.position.set(x, 1.35, -75);
+
+  const coin = new THREE.Mesh(
+    new THREE.TorusGeometry(0.35, 0.11, 8, 16),
+    goldMat
+  );
+  g.add(coin);
+
+  sphere(g, 0, 0, 0, 0.12, goldMat);
+
+  scene.add(g);
+  objects.push({ mesh: g, type: "coin", hit: false });
+}
+
+// ---------- CONTROLS ----------
+function moveLeft() {
+  if (!running || paused || gameOver) return;
+  lane = Math.max(0, lane - 1);
+}
+
+function moveRight() {
+  if (!running || paused || gameOver) return;
+  lane = Math.min(2, lane + 1);
+}
+
+function jump() {
+  if (!running || paused || gameOver) return;
+  if (player.position.y <= 0.01) jumpVelocity = 9.5;
+}
+
+$("left").addEventListener("pointerdown", e => {
+  e.preventDefault();
+  moveLeft();
+});
+
+$("right").addEventListener("pointerdown", e => {
+  e.preventDefault();
+  moveRight();
+});
+
+$("jump").addEventListener("pointerdown", e => {
+  e.preventDefault();
+  jump();
+});
+
+$("pause").addEventListener("click", () => {
+  if (gameOver) return;
+  paused = !paused;
+  $("pause").textContent = paused ? "▶" : "Ⅱ";
+});
+
+$("restart").addEventListener("click", resetGame);
+
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") moveLeft();
+  if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") moveRight();
+  if (e.key === "ArrowUp" || e.key === " ") jump();
+
+  if (e.key.toLowerCase() === "p") {
+    paused = !paused;
+    $("pause").textContent = paused ? "▶" : "Ⅱ";
+  }
+});
+
+// Swipe controls
+let touchX = 0;
+let touchY = 0;
+
+renderer.domElement.addEventListener("touchstart", e => {
+  if (!e.touches.length) return;
+  touchX = e.touches[0].clientX;
+  touchY = e.touches[0].clientY;
+}, { passive: true });
+
+renderer.domElement.addEventListener("touchend", e => {
+  if (!e.changedTouches.length) return;
+
+  const dx = e.changedTouches[0].clientX - touchX;
+  const dy = e.changedTouches[0].clientY - touchY;
+
+  if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+    dx < 0 ? moveLeft() : moveRight();
+  } else if (dy < -35) {
+    jump();
+  }
+}, { passive: true });
+
+// ---------- COLLISION ----------
+function finishGame() {
+  gameOver = true;
+  running = false;
+  $("finalScore").textContent = Math.floor(score);
+  $("endTitle").textContent = "MISSION FAILED!";
+  $("message").style.display = "block";
+}
+
+function resetGame() {
+  objects.forEach(o => scene.remove(o.mesh));
+  objects = [];
+
+  lane = 1;
+  score = 0;
+  coins = 0;
+  speed = 18;
+  elapsed = 0;
+  spawnTimer = 0;
+  coinTimer = 0;
+  jumpVelocity = 0;
+  player.position.set(0, 0, 2);
+
+  running = true;
+  paused = false;
+  gameOver = false;
+
+  $("score").textContent = "0";
+  $("coins").textContent = "0";
+  $("message").style.display = "none";
+  $("pause").textContent = "Ⅱ";
+
+  lastTime = performance.now();
+}
+
+// ---------- MAIN LOOP ----------
+function animate(now) {
+  requestAnimationFrame(animate);
+
+  const dt = Math.min((now - lastTime) / 1000 || 0, 0.04);
+  lastTime = now;
+
+  if (running && !paused && !gameOver) {
+    elapsed += dt;
+
+    // Speed and score increase
+    speed = Math.min(30, 18 + elapsed * 0.12);
+    score += dt * 10;
+
+    $("score").textContent = Math.floor(score);
+
+    // Move toward the player
+    markings.forEach(m => {
+      m.position.z += speed * dt;
+      if (m.position.z > 12) m.position.z -= 126;
+    });
+
+    // Trees scroll past
+    trees.forEach(t => {
+      t.position.z += speed * dt * 0.75;
+      if (t.position.z > 14) {
+        t.position.z -= 120;
+      }
+    });
+
+    // Spawn objects
+    spawnTimer += dt;
+    coinTimer += dt;
+
+    if (spawnTimer > Math.max(0.65, 1.3 - elapsed * 0.003)) {
+      spawnTimer = 0;
+      addObstacle();
+    }
+
+    if (coinTimer > 0.85) {
+      coinTimer = 0;
+      addCoin();
+    }
+
+    // Smooth lane movement
+    player.position.x +=
+      (lanes[lane] - player.position.x) * Math.min(1, dt * 12);
+
+    // Jump physics
+    if (player.position.y > 0 || jumpVelocity > 0) {
+      player.position.y += jumpVelocity * dt;
+      jumpVelocity -= 24 * dt;
+
+      if (player.position.y < 0) {
+        player.position.y = 0;
+        jumpVelocity = 0;
+      }
+    }
+
+    // Running animation
+    const phase = elapsed * 12;
+    soldier.position.y = Math.abs(Math.sin(phase)) * 0.06;
+    legs[0].rotation.x = Math.sin(phase) * 0.7;
+    legs[1].rotation.x = -Math.sin(phase) * 0.7;
+    arms[0].rotation.x = -Math.sin(phase) * 0.5;
+    arms[1].rotation.x = Math.sin(phase) * 0.5;
+
+    // Obstacles and coins
+    for (let i = objects.length - 1; i >= 0; i--) {
+      const o = objects[i];
+      o.mesh.position.z += speed * dt;
+
+      if (o.type === "coin") {
+        o.mesh.rotation.y += dt * 3;
+        o.mesh.position.y = 1.35 + Math.sin(elapsed * 4 + i) * 0.12;
+      }
+
+      const closeZ = Math.abs(o.mesh.position.z - player.position.z);
+      const closeX = Math.abs(o.mesh.position.x - player.position.x);
+
+      if (!o.hit && closeZ < 0.85 && closeX < 0.9) {
+        if (o.type === "coin") {
+          o.hit = true;
+          coins++;
+          score += 25;
+          $("coins").textContent = coins;
+          scene.remove(o.mesh);
+          objects.splice(i, 1);
+          continue;
+        } else if (player.position.y < 0.85) {
+          o.hit = true;
+          finishGame();
+          break;
+        }
+      }
+
+      if (o.mesh.position.z > 12) {
+        scene.remove(o.mesh);
+        objects.splice(i, 1);
+      }
+    }
+  }
+
+  // Camera follows the commando
+  camera.position.x +=
+    (player.position.x * 0.25 - camera.position.x) * 0.05;
+  camera.lookAt(player.position.x * 0.15, 1.1, -6);
+
+  renderer.render(scene, camera);
+}
+
+// ---------- RESIZE ----------
+window.addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+});
+
+lastTime = performance.now();
+requestAnimationFrame(animate);
+
+})();
+</script>
+</body>
+  </html>
