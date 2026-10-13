@@ -1,1322 +1,561 @@
+
 <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation Tiranga - Jungle Commando</title>
 
-<html lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
-<title>Indian Army Commando: Jungle Rush • Operation Tiranga Run</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;0,800;1,700&amp;family=Rajdhani:wght@600;700&amp;family=Share+Tech+Mono&amp;display=swap" rel="stylesheet"/>
 <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #050b07; font-family: 'Rajdhani', sans-serif; color: #fff; touch-action: manipulation; }
-    #canvas-container { position: absolute; inset: 0; }
-    #game-canvas { width: 100%; height: 100%; display: block; }
-
-    /* Top HUD */
-    #hud {
-      position: absolute; inset: 0; pointer-events: none; z-index: 20; padding: 18px 24px;
-      display: flex; flex-direction: column; justify-content: space-between;
-    }
-    .hud-top {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      gap: 12px;
-    }
-
-    .stat-pill {
-      background: linear-gradient(135deg, rgba(8, 20, 10, 0.92), rgba(15, 30, 15, 0.85));
-      border: 1.5px solid rgba(132, 204, 22, 0.45); border-left: 4px solid #ff9933;
-      padding: 8px 16px; border-radius: 8px; backdrop-filter: blur(8px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6); display: flex; align-items: center; gap: 12px;
-    }
-    .stat-icon { font-size: 22px; filter: drop-shadow(0 0 6px #ff9933); }
-    .stat-label { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: #a3e635; letter-spacing: 1px; }
-    .stat-val { font-family: 'Chakra Petch', sans-serif; font-size: 26px; font-weight: 800; color: #fff; line-height: 1.05; }
-    .stat-unit { font-size: 13px; color: #fde047; margin-left: 3px; font-family: 'Rajdhani', sans-serif; font-weight: 600; }
-
-    .multiplier-badge {
-      background: linear-gradient(135deg, #ea580c, #b45309);
-      border: 2px solid #fef08a; border-radius: 6px; padding: 4px 10px;
-      font-family: 'Chakra Petch', sans-serif; font-weight: 800; font-size: 15px;
-      color: #fff; box-shadow: 0 0 16px rgba(234, 88, 12, 0.7); animation: pulseGlow 1.4s infinite alternate;
-    }
-    @keyframes pulseGlow { 0% { transform: scale(1); } 100% { transform: scale(1.08); filter: brightness(1.2); } }
-
-    /* Active Power-up Meter */
-    #powerup-bar-wrap {
-      margin-top: 10px; min-width: 220px; display: none;
-      background: rgba(4, 14, 7, 0.9); border: 1.5px solid #ff9933;
-      border-radius: 6px; padding: 6px 12px; box-shadow: 0 0 20px rgba(255, 153, 51, 0.4);
-    }
-    .p-title-row { display: flex; justify-content: space-between; font-size: 11px; font-family: 'Share Tech Mono', monospace; color: #fef08a; }
-    .p-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; margin-top: 4px; }
-    .p-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff9933, #ffffff, #138808); transition: width 0.1s linear; }
-
-    /* Audio Toggle Button */
-    #btn-audio-toggle {
-      pointer-events: auto; background: rgba(8, 24, 12, 0.85); border: 1.5px solid rgba(132, 204, 22, 0.4);
-      color: #a3e635; font-size: 18px; padding: 8px 14px; border-radius: 8px; cursor: pointer;
-      backdrop-filter: blur(8px); font-family: 'Chakra Petch', sans-serif; font-weight: 700;
-      display: flex; align-items: center; gap: 6px; transition: all 0.2s;
-    }
-    #btn-audio-toggle:hover { border-color: #ff9933; color: #ff9933; }
-
-    /* On-screen Flash & Speed Lines */
-    #invincible-vignette {
-      position: absolute; inset: 0; pointer-events: none; z-index: 15; opacity: 0;
-      box-shadow: inset 0 0 70px rgba(255, 153, 51, 0.8), inset 0 0 130px rgba(19, 136, 8, 0.6);
-      transition: opacity 0.3s;
-    }
-    #hit-flash {
-      position: absolute; inset: 0; pointer-events: none; z-index: 28; opacity: 0;
-      background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, rgba(185, 28, 28, 0.85) 100%);
-      transition: opacity 0.1s;
-    }
-
-    /* Mobile Quick Controls */
-    #mobile-controls {
-      position: absolute; bottom: 20px; left: 0; right: 0;
-      display: flex; justify-content: space-between; align-items: flex-end;
-      padding: 0 20px; pointer-events: none; z-index: 25;
-    }
-    .m-group { display: flex; gap: 10px; pointer-events: auto; }
-    .touch-btn {
-      width: 62px; height: 62px; border-radius: 50%; border: 2px solid rgba(132, 204, 22, 0.6);
-      background: linear-gradient(135deg, rgba(20, 42, 24, 0.92), rgba(10, 24, 12, 0.92));
-      color: #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.6); touch-action: manipulation; cursor: pointer;
-    }
-    .touch-btn:active { transform: scale(0.9); filter: brightness(1.3); border-color: #ff9933; }
-    .btn-act-jump { background: linear-gradient(135deg, #0284c7, #0369a1); border-color: #7dd3fc; }
-    .btn-act-slide { background: linear-gradient(135deg, #d97706, #b45309); border-color: #fde68a; }
-
-    /* Modals & Screen Overlays */
-    .modal-overlay {
-      position: absolute; inset: 0; z-index: 50; background: rgba(3, 10, 5, 0.93);
-      backdrop-filter: blur(14px); display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-box {
-      background: linear-gradient(165deg, rgba(16, 36, 20, 0.98), rgba(6, 16, 8, 0.99));
-      border: 1.5px solid rgba(132, 204, 22, 0.45); border-top: 5px solid #ff9933; border-bottom: 5px solid #138808;
-      border-radius: 12px; max-width: 520px; width: 100%; padding: 32px 28px; text-align: center;
-      box-shadow: 0 25px 70px rgba(0,0,0,0.95);
-    }
-    .emblem-icon {
-      width: 64px; height: 64px; margin: 0 auto 12px; border-radius: 50%;
-      background: #142814; border: 2.5px solid #ff9933; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 24px rgba(255, 153, 51, 0.55);
-    }
-    .game-logo {
-      font-family: 'Chakra Petch', sans-serif; font-size: 28px; font-weight: 800;
-      color: #ff9933; letter-spacing: 2px; text-transform: uppercase;
-      text-shadow: 0 2px 14px rgba(255, 153, 51, 0.4);
-    }
-    .game-sub {
-      font-family: 'Share Tech Mono', monospace; font-size: 13px; color: #a3e635;
-      letter-spacing: 2.5px; margin-top: 4px;
-    }
-    .instructions-card {
-      background: rgba(0, 0, 0, 0.65); border-left: 3px solid #ff9933;
-      padding: 16px; border-radius: 6px; margin: 20px 0; text-align: left;
-      font-size: 13px; line-height: 1.6; color: #cbd5e1;
-    }
-    .key-badge {
-      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 4px; padding: 2px 6px; font-family: monospace; color: #ffedd5; font-size: 11px; font-weight: bold;
-    }
-    .power-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 4px;
-    }
-    .power-item {
-      background: rgba(20, 40, 22, 0.6); border: 1px solid rgba(132, 204, 22, 0.25);
-      border-radius: 4px; padding: 6px 8px; font-size: 11px; display: flex; align-items: center; gap: 8px;
-    }
-
-    .btn-action {
-      background: linear-gradient(90deg, #ea580c, #f97316); border: 2px solid #ffedd5;
-      color: #fff; font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 800;
-      letter-spacing: 2px; padding: 14px 32px; border-radius: 8px; cursor: pointer; width: 100%;
-      box-shadow: 0 8px 30px rgba(234, 88, 12, 0.55); transition: all 0.2s ease;
-    }
-    .btn-action:hover { filter: brightness(1.15); transform: translateY(-2px); }
-
-    .score-breakdown {
-      display: flex; flex-direction: column; gap: 8px; margin: 18px 0;
-      font-family: 'Share Tech Mono', monospace; font-size: 14px;
-    }
-    .stat-line {
-      display: flex; justify-content: space-between; padding: 6px 10px;
-      background: rgba(0,0,0,0.4); border-radius: 4px; border-bottom: 1px dashed rgba(255,255,255,0.15);
-    }
-
-    @media (max-width: 640px) {
-      .game-logo { font-size: 22px; }
-      .stat-pill { padding: 6px 10px; }
-      .stat-val { font-size: 20px; }
-      .touch-btn { width: 54px; height: 54px; font-size: 16px; }
-      .instructions-card { font-size: 12px; }
-    }
-  </style>
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden;background:#101811;color:white;font-family:Arial,sans-serif}
+#hud{position:fixed;top:15px;left:15px;z-index:5;display:flex;gap:10px;flex-wrap:wrap}
+.panel{background:#101a13dd;border:1px solid #b5c99b66;padding:10px 14px;border-radius:10px;font-weight:bold}
+#message{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#07100dcc;z-index:10;text-align:center}
+.dialog{background:#17271c;border:1px solid #93a77a;padding:28px;border-radius:16px;width:min(90%,420px)}
+h1{color:#e4c878;margin:0 0 10px}
+button{border:0;border-radius:9px;padding:12px 18px;background:#d6a83f;color:#151a11;font-size:16px;font-weight:bold;cursor:pointer}
+#controls{position:fixed;bottom:20px;left:0;right:0;display:flex;justify-content:space-between;padding:0 20px;z-index:5;pointer-events:none}
+.group{display:flex;gap:12px;pointer-events:auto}
+.control{width:60px;height:60px;border-radius:50%;background:#15251cdd;color:white;border:1px solid #b4c9a4;font-size:22px;touch-action:manipulation}
+#hint{position:fixed;bottom:8px;left:0;right:0;text-align:center;color:#e4e8d9;font-size:12px;z-index:4;pointer-events:none}
+</style>
 </head>
+
 <body>
-<div id="canvas-container">
-<canvas id="game-canvas"></canvas>
-<div id="invincible-vignette"></div>
-<div id="hit-flash"></div>
-<!-- Live HUD -->
 <div id="hud">
-<div class="hud-top">
-<div style="display:flex; flex-direction:column; gap:6px;">
-<!-- Meters Ran -->
-<div class="stat-pill">
-<span class="stat-icon">🏃‍♂️</span>
-<div>
-<div class="stat-label">DISTANCE SPRINTED</div>
-<div class="stat-val"><span id="hud-distance">0</span><span class="stat-unit">M</span></div>
+  <div class="panel">🏅 Score: <span id="score">0</span></div>
+  <div class="panel">❤️ Health: <span id="health">100</span>%</div>
+  <div class="panel">⚡ Speed: <span id="speed">1</span>x</div>
 </div>
+
+<div id="message">
+  <div class="dialog">
+    <h1>OPERATION TIRANGA</h1>
+    <p>JUNGLE COMMANDO</p>
+    <p>Dodge obstacles, jump over barriers and survive the mission.</p>
+    <p>Keyboard: ← → to move, ↑ or Space to jump, ↓ to slide.</p>
+    <button id="start">START MISSION</button>
+  </div>
 </div>
-<!-- Power-up Active Timer -->
-<div id="powerup-bar-wrap">
-<div class="p-title-row">
-<span id="p-title">🇮🇳 TIRANGA INVINCIBILITY</span>
-<span id="p-timer">6.0s</span>
+
+<div id="controls">
+  <div class="group">
+    <button class="control" id="left">◀</button>
+    <button class="control" id="right">▶</button>
+  </div>
+  <div class="group">
+    <button class="control" id="slide">⬇</button>
+    <button class="control" id="jump">⬆</button>
+  </div>
 </div>
-<div class="p-bar-bg"><div class="p-bar-fill" id="p-fill"></div></div>
-</div>
-</div>
-<div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
-<div style="display:flex; gap:8px; align-items:center;">
-<div class="multiplier-badge" id="hud-mult">2X SPEED</div>
-<button id="btn-audio-toggle">🔊 SFX ON</button>
-</div>
-<!-- Medals Collected -->
-<div class="stat-pill" style="border-right:4px solid #138808; border-left:none;">
-<div>
-<div class="stat-label" style="text-align:right;">MEDALS / CHAKRA</div>
-<div class="stat-val" style="color:#fde047; text-align:right;"><span id="hud-medals">0</span></div>
-</div>
-<span class="stat-icon" style="filter:drop-shadow(0 0 6px #facc15);">🎖️</span>
-</div>
-</div>
-</div>
-<!-- On-Screen Mobile Buttons -->
-<div id="mobile-controls">
-<div class="m-group">
-<button class="touch-btn" id="m-btn-left">◀</button>
-<button class="touch-btn" id="m-btn-right">▶</button>
-</div>
-<div class="m-group">
-<button class="touch-btn btn-act-jump" id="m-btn-jump">▲<br/><span style="font-size:10px;">JUMP</span></button>
-<button class="touch-btn btn-act-slide" id="m-btn-slide">▼<br/><span style="font-size:10px;">SLIDE</span></button>
-</div>
-</div>
-</div>
-<!-- Start / Briefing Modal -->
-<div class="modal-overlay" id="start-modal">
-<div class="modal-box">
-<div class="emblem-icon">
-<svg fill="none" height="40" viewbox="0 0 100 100" width="40">
-<path d="M50 5 L88 28 L88 68 L50 95 L12 68 L12 28 Z" fill="#142814" stroke="#ff9933" stroke-width="5"></path>
-<path d="M50 18 L50 82 M25 50 L75 50" stroke="#facc15" stroke-linecap="round" stroke-width="6"></path>
-<circle cx="50" cy="50" fill="#dc2626" r="10"></circle>
-</svg>
-</div>
-<div class="game-logo">COMMANDO: JUNGLE RUSH</div>
-<div class="game-sub">OPERATION TIRANGA RUN • 9 PARA SF</div>
-<div class="instructions-card">
-<strong>COMBAT FLIGHT PROTOCOL:</strong>
-<p style="margin-top:4px;">Dash at supersonic speed across treacherous Himalayan mountain gorges. Clear enemy barriers and gather military honours for the nation!</p>
-<ul style="margin:8px 0 0 18px; font-size:12px;">
-<li><span class="key-badge">A</span> / <span class="key-badge">D</span> or <span class="key-badge">Left / Right</span> / Swipe: Switch Lanes</li>
-<li><span class="key-badge">W</span> / <span class="key-badge">Space</span> / Swipe UP: High Tactical Jump</li>
-<li><span class="key-badge">S</span> / <span class="key-badge">Down</span> / Swipe DOWN: Combat Slide under barricades</li>
-</ul>
-<div class="power-grid">
-<div class="power-item"><span>🇮🇳</span><span><strong>Tiranga Aura:</strong> Invincibility &amp; ram blast</span></div>
-<div class="power-item"><span>🧲</span><span><strong>SF Magnet:</strong> Sucks in all golden medals</span></div>
-<div class="power-item"><span>⚡</span><span><strong>Jet Boots:</strong> Super high tactical leaps</span></div>
-<div class="power-item"><span>🎖️</span><span><strong>Medals:</strong> Boost national combat score</span></div>
-</div>
-</div>
-<button class="btn-action" id="btn-start">SPRINT FOR THE NATION • JAI HIND</button>
-</div>
-</div>
-<!-- Game Over Modal -->
-<div class="modal-overlay" id="end-modal" style="display:none;">
-<div class="modal-box">
-<div class="emblem-icon" style="border-color:#ef4444;">
-<span style="font-size:28px;">💥</span>
-</div>
-<div class="game-logo" style="color:#f87171;">COMMANDO AMBUSHED!</div>
-<div class="game-sub">VALIANT EFFORT • REDEPLOY IMMEDIATELY</div>
-<div class="score-breakdown">
-<div class="stat-line">
-<span>DISTANCE SURVIVED</span>
-<span id="final-dist" style="color:#4ade80; font-weight:bold;">0 M</span>
-</div>
-<div class="stat-line">
-<span>SHOURYA MEDALS COLLECTED</span>
-<span id="final-medals" style="color:#fde047; font-weight:bold;">0</span>
-</div>
-<div class="stat-line">
-<span>TOTAL COMBAT SCORE</span>
-<span id="final-score" style="color:#ff9933; font-weight:bold;">0 PTS</span>
-</div>
-<div class="stat-line">
-<span>SECTOR RECORD</span>
-<span id="high-dist" style="color:#38bdf8; font-weight:bold;">0 M</span>
-</div>
-</div>
-<button class="btn-action" id="btn-restart">REDEPLOY SPRINT • RUN AGAIN</button>
-</div>
-</div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<div id="hint">Move • Jump • Slide • Avoid obstacles</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>
-    /* =====================================================================
-     * SYNTHESIZED PROCEDURAL WEB AUDIO ENGINE
-     * Runner footsteps, jumps, slides, coin chimes, invincibility and crash
-     * ===================================================================== */
-    class TacticalAudioEngine {
-      constructor() {
-        this.ctx = null;
-        this.enabled = true;
-      }
-      init() {
-        if (!this.ctx) {
-          const AC = window.AudioContext || window.webkitAudioContext;
-          if (AC) this.ctx = new AC();
-        }
-        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
-      }
-      playStep() {
-        if (!this.ctx || !this.enabled) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(140 + Math.random() * 40, now);
-        osc.frequency.exponentialRampToValueAtTime(30, now + 0.06);
-        g.gain.setValueAtTime(0.12, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-        osc.connect(g); g.connect(this.ctx.destination);
-        osc.start(now); osc.stop(now + 0.06);
-      }
-      playJump() {
-        if (!this.ctx || !this.enabled) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(180, now);
-        osc.frequency.exponentialRampToValueAtTime(520, now + 0.2);
-        g.gain.setValueAtTime(0.3, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-        osc.connect(g); g.connect(this.ctx.destination);
-        osc.start(now); osc.stop(now + 0.22);
-      }
-      playSlide() {
-        if (!this.ctx || !this.enabled) return;
-        const now = this.ctx.currentTime;
-        const dur = 0.25;
-        const buf = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * dur), this.ctx.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < d.length; i++) {
-          d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.09));
-        }
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buf;
-        const f = this.ctx.createBiquadFilter();
-        f.type = 'bandpass';
-        f.frequency.setValueAtTime(650, now);
-        const g = this.ctx.createGain();
-        g.gain.setValueAtTime(0.4, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
-        noise.connect(f); f.connect(g); g.connect(this.ctx.destination);
-        noise.start(now);
-      }
-      playCoin() {
-        if (!this.ctx || !this.enabled) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(987.77, now); // B5
-        osc.frequency.setValueAtTime(1318.51, now + 0.06); // E6
-        g.gain.setValueAtTime(0.35, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-        osc.connect(g); g.connect(this.ctx.destination);
-        osc.start(now); osc.stop(now + 0.25);
-      }
-      playPowerup() {
-        if (!this.ctx || !this.enabled) return;
-        const now = this.ctx.currentTime;
-        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-          const osc = this.ctx.createOscillator();
-          const g = this.ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now + i * 0.07);
-          g.gain.setValueAtTime(0.28, now + i * 0.07);
-          g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.18);
-          osc.connect(g); g.connect(this.ctx.destination);
-          osc.start(now + i * 0.07); osc.stop(now + i * 0.07 + 0.18);
-        });
-      }
-      playCrash() {
-        if (!this.ctx || !this.enabled) return;
-        const now = this.ctx.currentTime;
-        const dur = 0.7;
-        const buf = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * dur), this.ctx.sampleRate);
-        const d = buf.getChannelData(0);
-        for (let i = 0; i < d.length; i++) {
-          d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (this.ctx.sampleRate * 0.18));
-        }
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buf;
-        const f = this.ctx.createBiquadFilter();
-        f.type = 'lowpass';
-        f.frequency.setValueAtTime(450, now);
-        f.frequency.linearRampToValueAtTime(60, now + dur);
-        const g = this.ctx.createGain();
-        g.gain.setValueAtTime(0.9, now);
-        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
-        noise.connect(f); f.connect(g); g.connect(this.ctx.destination);
-        noise.start(now);
-      }
-    }
-    const sfx = new TacticalAudioEngine();
+(() => {
+  const $ = id => document.getElementById(id);
 
-    /* =====================================================================
-     * GAMEPLAY CONFIGURATION & LANES
-     * ===================================================================== */
-    const LANES = [-4.0, 0, 4.0];
-    const CONFIG = {
-      baseSpeed: 38,
-      maxSpeed: 75,
-      accel: 0.45,
-      jumpSpeed: 17.5,
-      highJumpSpeed: 24,
-      gravity: -54,
-      slideDuration: 0.75,
-      laneSwitchSpeed: 16
-    };
+  let scene, camera, renderer, clock;
+  let player, playerBody, playerLegs = [];
+  let obstacles = [], scenery = [];
+  let running = false, gameOver = false;
+  let lane = 1, jumpVelocity = 0, playerY = 0;
+  let sliding = false, slideTime = 0;
+  let score = 0, health = 100, elapsed = 0;
+  let spawnTimer = 0, damageFlash = 0;
+  const laneX = [-3, 0, 3];
+  const obstacleMaterials = {};
 
-    const STATE = {
-      started: false,
-      dead: false,
-      distance: 0,
-      medals: 0,
-      currentLane: 1, // 0: Left, 1: Center, 2: Right
-      playerX: 0,
-      playerY: 0,
-      velY: 0,
-      isGrounded: true,
-      isSliding: false,
-      slideTimer: 0,
-      speed: CONFIG.baseSpeed,
-      speedMultiplier: 1,
-      // Power-ups
-      invincibleTime: 0,
-      magnetTime: 0,
-      superJumpTime: 0,
-      highScore: parseInt(localStorage.getItem('tiranga_run_high') || '0', 10),
-      lastStepDist: 0
-    };
+  init();
 
-    /* =====================================================================
-     * THREE.JS SETUP & ATMOSPHERE
-     * ===================================================================== */
-    const canvas = document.getElementById('game-canvas');
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0c1b12);
-    scene.fog = new THREE.FogExp2(0x0c1b12, 0.013);
+  function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x82958a);
+    scene.fog = new THREE.FogExp2(0x82958a, 0.012);
 
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 800);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    camera = new THREE.PerspectiveCamera(
+      65, innerWidth / innerHeight, 0.1, 300
+    );
+    camera.position.set(0, 5.2, 10.5);
+    camera.lookAt(0, 1, -5);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.25;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    document.body.appendChild(renderer.domElement);
 
-    // Sunlight and Himalayan Mist Hemispheric Lighting
-    const hemiLight = new THREE.HemisphereLight(0x8bc34a, 0x1b3520, 0.85);
-    scene.add(hemiLight);
+    clock = new THREE.Clock();
 
-    const sunLight = new THREE.DirectionalLight(0xfffae0, 2.0);
-    sunLight.position.set(25, 60, -35);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024;
-    sunLight.shadow.mapSize.height = 1024;
-    sunLight.shadow.camera.near = 5;
-    sunLight.shadow.camera.far = 160;
-    const sDim = 26;
-    sunLight.shadow.camera.left = -sDim; sunLight.shadow.camera.right = sDim;
-    sunLight.shadow.camera.top = sDim; sunLight.shadow.camera.bottom = -sDim;
-    scene.add(sunLight);
+    scene.add(new THREE.HemisphereLight(0xc9dfd0, 0x343626, 1.6));
 
-    /* =====================================================================
-     * PROCEDURAL TEXTURES
-     * ===================================================================== */
-    function createDirtTrackTexture() {
-      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#2d3b25'; ctx.fillRect(0, 0, 256, 256);
-      // Lane ruts
-      ctx.fillStyle = '#222f1c';
-      ctx.fillRect(20, 0, 40, 256);
-      ctx.fillRect(108, 0, 40, 256);
-      ctx.fillRect(196, 0, 40, 256);
-      // Fine gravel noise
-      for (let i = 0; i < 2400; i++) {
-        const v = 35 + Math.random() * 40;
-        ctx.fillStyle = `rgb(${v+15}, ${v+25}, ${v})`;
-        ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
-      }
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(1, 8);
-      return tex;
-    }
+    const sun = new THREE.DirectionalLight(0xffedcc, 2.1);
+    sun.position.set(-8, 15, 7);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -14;
+    sun.shadow.camera.right = 14;
+    sun.shadow.camera.top = 20;
+    sun.shadow.camera.bottom = -20;
+    scene.add(sun);
 
-    function createCamoTexture(base, s1, s2) {
-      const c = document.createElement('canvas'); c.width = 128; c.height = 128;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = base; ctx.fillRect(0, 0, 128, 128);
-      [s1, s2].forEach(col => {
-        ctx.fillStyle = col;
-        for (let i = 0; i < 18; i++) {
-          ctx.beginPath();
-          ctx.ellipse(Math.random()*128, Math.random()*128, 12+Math.random()*14, 8+Math.random()*12, Math.random()*Math.PI, 0, Math.PI*2);
-          ctx.fill();
-        }
-      });
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      return tex;
-    }
+    createWorld();
+    createPlayer();
+    createScenery();
+    createObstacles();
+    bindControls();
 
-    const trackTex = createDirtTrackTexture();
-    const commandoCamoTex = createCamoTexture('#33452c', '#1e291b', '#483c2c');
+    addEventListener('resize', onResize);
+    $('start').addEventListener('click', startGame);
 
-    /* =====================================================================
-     * 3D COMMANDO RIG (PARA SF DETAILED MODEL)
-     * ===================================================================== */
-    const playerGroup = new THREE.Group();
-    scene.add(playerGroup);
+    renderer.setAnimationLoop(animate);
+  }
 
-    const redBeretMat = new THREE.MeshStandardMaterial({ color: 0x881313, roughness: 0.65 });
-    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.25, metalness: 0.85 });
-    const camoMat = new THREE.MeshStandardMaterial({ map: commandoCamoTex, roughness: 0.85 });
-    const vestMat = new THREE.MeshStandardMaterial({ color: 0x1f2b1d, roughness: 0.8 });
-    const bootMat = new THREE.MeshStandardMaterial({ color: 0x141412, roughness: 0.6 });
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xb5784f, roughness: 0.75 });
-    const gunMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.8 });
-
-    const commandoRoot = new THREE.Group();
-    playerGroup.add(commandoRoot);
-
-    // Torso & Tactical Carrier Vest
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.25, 0.65), camoMat);
-    torso.position.y = 1.35; torso.castShadow = true;
-    commandoRoot.add(torso);
-
-    const vest = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.05, 0.72), vestMat);
-    vest.position.y = 1.4; vest.castShadow = true;
-    commandoRoot.add(vest);
-
-    // Ammo Pouches & Indian Tricolor Chest Patch
-    [-0.26, 0.26].forEach(px => {
-      const pouch = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.32, 0.15), vestMat);
-      pouch.position.set(px, 1.3, 0.42); pouch.castShadow = true;
-      commandoRoot.add(pouch);
+  function mat(color, roughness = 1) {
+    return new THREE.MeshStandardMaterial({
+      color, roughness, metalness: 0
     });
-
-    const tirangaPatch = new THREE.Mesh(new THREE.PlaneGeometry(0.28, 0.16), new THREE.MeshBasicMaterial({ color: 0xff9933 }));
-    tirangaPatch.position.set(0, 1.7, 0.38); commandoRoot.add(tirangaPatch);
-
-    // Head, Maroon Beret with Balidan Brass Wing Badge
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12), skinMat);
-    head.position.y = 2.22; head.castShadow = true;
-    commandoRoot.add(head);
-
-    const beret = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.35, 0.2, 12), redBeretMat);
-    beret.position.set(0.05, 2.45, 0.02); beret.rotation.z = -0.15; beret.castShadow = true;
-    commandoRoot.add(beret);
-
-    const balidanBadge = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.12, 0.04), brassMat);
-    balidanBadge.position.set(-0.2, 2.44, 0.22);
-    commandoRoot.add(balidanBadge);
-
-    // Tactical Sunglasses
-    const glasses = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.1, 0.12), gunMat);
-    glasses.position.set(0, 2.24, 0.31);
-    commandoRoot.add(glasses);
-
-    // Segmented Limbs for Running, Leaping & Tactical Slide
-    const legGeo = new THREE.CylinderGeometry(0.16, 0.14, 1.05, 8);
-    const leftLeg = new THREE.Group(); leftLeg.position.set(-0.32, 0.7, 0);
-    const lLegMesh = new THREE.Mesh(legGeo, camoMat); lLegMesh.position.y = -0.48; lLegMesh.castShadow = true; leftLeg.add(lLegMesh);
-    const lBoot = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.44), bootMat); lBoot.position.set(0, -0.92, 0.06); lBoot.castShadow = true; leftLeg.add(lBoot);
-    commandoRoot.add(leftLeg);
-
-    const rightLeg = new THREE.Group(); rightLeg.position.set(0.32, 0.7, 0);
-    const rLegMesh = new THREE.Mesh(legGeo, camoMat); rLegMesh.position.y = -0.48; rLegMesh.castShadow = true; rightLeg.add(rLegMesh);
-    const rBoot = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.44), bootMat); rBoot.position.set(0, -0.92, 0.06); rBoot.castShadow = true; rightLeg.add(rBoot);
-    commandoRoot.add(rightLeg);
-
-    const armGeo = new THREE.CylinderGeometry(0.13, 0.11, 0.85, 8);
-    const leftArm = new THREE.Group(); leftArm.position.set(-0.62, 1.8, 0);
-    const lArmMesh = new THREE.Mesh(armGeo, camoMat); lArmMesh.position.y = -0.38; lArmMesh.castShadow = true; leftArm.add(lArmMesh);
-    commandoRoot.add(leftArm);
-
-    const rightArm = new THREE.Group(); rightArm.position.set(0.62, 1.8, 0);
-    const rArmMesh = new THREE.Mesh(armGeo, camoMat); rArmMesh.position.y = -0.38; rArmMesh.castShadow = true; rightArm.add(rArmMesh);
-    // Commando Service Carbine
-    const carbine = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.95), gunMat);
-    carbine.position.set(0.1, -0.5, 0.35); carbine.rotation.x = 0.4; carbine.castShadow = true;
-    rightArm.add(carbine);
-    commandoRoot.add(rightArm);
-
-    // Invincibility Tricolor Aura Ring
-    const auraGroup = new THREE.Group();
-    const auraMat1 = new THREE.MeshBasicMaterial({ color: 0xff9933, wireframe: true, transparent: true, opacity: 0 });
-    const auraMat2 = new THREE.MeshBasicMaterial({ color: 0x138808, wireframe: true, transparent: true, opacity: 0 });
-    const auraMesh1 = new THREE.Mesh(new THREE.SphereGeometry(1.6, 12, 8), auraMat1);
-    const auraMesh2 = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.08, 6, 24), auraMat2);
-    auraMesh2.rotation.x = Math.PI / 2;
-    auraGroup.add(auraMesh1); auraGroup.add(auraMesh2);
-    auraGroup.position.y = 1.3;
-    playerGroup.add(auraGroup);
-
-    /* =====================================================================
-     * INFINITE PROCEDURAL TRACK STREAMING (CHUNKS)
-     * ===================================================================== */
-    const CHUNK_LENGTH = 120;
-    const TOTAL_CHUNKS = 5;
-    const chunks = [];
-
-    const trackMat = new THREE.MeshStandardMaterial({ map: trackTex, roughness: 0.9 });
-    const grassMat = new THREE.MeshStandardMaterial({ color: 0x1d301b, roughness: 0.95 });
-    const cliffMat = new THREE.MeshStandardMaterial({ color: 0x2e3830, roughness: 0.9 });
-    const pineLeafMat = new THREE.MeshStandardMaterial({ color: 0x164619, roughness: 0.85 });
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.95 });
-
-    function createPineTree() {
-      const g = new THREE.Group();
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 6, 6), trunkMat);
-      trunk.position.y = 3; trunk.castShadow = true; g.add(trunk);
-      for (let l = 0; l < 3; l++) {
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(3.2 - l * 0.7, 3.8, 6), pineLeafMat);
-        cone.position.y = 4.8 + l * 2.1; cone.castShadow = true; g.add(cone);
-      }
-      return g;
-    }
-
-    function createTrackChunk(zOffset) {
-      const chunk = new THREE.Group();
-      chunk.position.z = zOffset;
-
-      // Center Dirt Road (3 lanes width = 14m)
-      const roadGeo = new THREE.PlaneGeometry(14, CHUNK_LENGTH);
-      roadGeo.rotateX(-Math.PI / 2);
-      const road = new THREE.Mesh(roadGeo, trackMat);
-      road.position.y = 0.02; road.receiveShadow = true;
-      chunk.add(road);
-
-      // Lane guide stripes
-      [-2, 2].forEach(lx => {
-        const stripeGeo = new THREE.PlaneGeometry(0.12, CHUNK_LENGTH);
-        stripeGeo.rotateX(-Math.PI / 2);
-        const stripe = new THREE.Mesh(stripeGeo, new THREE.MeshBasicMaterial({ color: 0x738368, transparent: true, opacity: 0.4 }));
-        stripe.position.set(lx, 0.03, 0);
-        chunk.add(stripe);
-      });
-
-      // Side Grass & Himalayan Cliffs
-      [-1, 1].forEach(side => {
-        const grass = new THREE.Mesh(new THREE.PlaneGeometry(40, CHUNK_LENGTH), grassMat);
-        grass.rotateX(-Math.PI / 2);
-        grass.position.set(side * 27, 0, 0); grass.receiveShadow = true;
-        chunk.add(grass);
-
-        // Towering Cliff Wall
-        const cliff = new THREE.Mesh(new THREE.BoxGeometry(18, 28, CHUNK_LENGTH), cliffMat);
-        cliff.position.set(side * 36, 14, 0); cliff.castShadow = true;
-        chunk.add(cliff);
-
-        // Roadside Pines & Boulders
-        for (let i = -CHUNK_LENGTH / 2 + 10; i < CHUNK_LENGTH / 2; i += 18 + Math.random() * 12) {
-          const tree = createPineTree();
-          tree.position.set(side * (10 + Math.random() * 12), 0, i);
-          const sc = 0.8 + Math.random() * 0.5;
-          tree.scale.set(sc, sc, sc);
-          chunk.add(tree);
-        }
-      });
-
-      scene.add(chunk);
-      return chunk;
-    }
-
-    for (let i = 0; i < TOTAL_CHUNKS; i++) {
-      chunks.push(createTrackChunk(i * CHUNK_LENGTH));
-    }
-
-    // Distant Snow-capped Mountain Range (Sky backdrop)
-    const mountainMat = new THREE.MeshStandardMaterial({ color: 0x1f3627, roughness: 0.95 });
-    for (let m = 0; m < 14; m++) {
-      const peak = new THREE.Mesh(new THREE.ConeGeometry(55 + Math.random() * 35, 120 + Math.random() * 50, 5), mountainMat);
-      const angle = (m / 14) * Math.PI * 2;
-      peak.position.set(Math.cos(angle) * 360, 40, Math.sin(angle) * 360);
-      scene.add(peak);
-    }
-
-    /* =====================================================================
-     * DYNAMIC PROCEDURAL OBSTACLES & POWER-UPS
-     * ===================================================================== */
-    const activeObstacles = [];
-    const activeCollectibles = [];
-    const activeParticles = [];
-
-    // Shared Materials & Geometries for high performance
-    const logMat = new THREE.MeshStandardMaterial({ color: 0x422e1b, roughness: 0.9 });
-    const logBarkMat = new THREE.MeshStandardMaterial({ color: 0x2e4221, roughness: 0.9 });
-    const razorMat = new THREE.MeshStandardMaterial({ color: 0x8a9296, metalness: 0.8, roughness: 0.3 });
-    const barrierWoodMat = new THREE.MeshStandardMaterial({ color: 0xa8422b, roughness: 0.8 });
-    const medalMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.9, roughness: 0.25, emissive: 0xb45309, emissiveIntensity: 0.4 });
-    const flagAuraMat = new THREE.MeshBasicMaterial({ color: 0xff9933 });
-    const magnetMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.3 });
-
-    // OBSTACLE BUILDERS
-    function createFallenLog(lane) {
-      const group = new THREE.Group();
-      group.position.set(LANES[lane], 0, 0);
-
-      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.7, 3.8, 8), logMat);
-      log.rotation.z = Math.PI / 2; log.position.y = 0.65; log.castShadow = true;
-      group.add(log);
-
-      // Mossy patch on log
-      const moss = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.72, 2.2, 8), logBarkMat);
-      moss.rotation.z = Math.PI / 2; moss.position.y = 0.65;
-      group.add(moss);
-
-      group.userData = {
-        type: 'JUMP_OVER', // low obstacle: must jump or switch lane
-        lane: lane,
-        minY: 0,
-        maxY: 1.4,
-        radius: 1.7
-      };
-      return group;
-    }
-
-    function createHighBarricade(lane) {
-      const group = new THREE.Group();
-      group.position.set(LANES[lane], 0, 0);
-
-      // Bamboo Arch / Laser Tripwire under which Commando MUST SLIDE
-      const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 4.4, 6), trunkMat);
-      postL.position.set(-1.8, 2.2, 0); postL.castShadow = true; group.add(postL);
-      const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 4.4, 6), trunkMat);
-      postR.position.set(1.8, 2.2, 0); postR.castShadow = true; group.add(postR);
-
-      // Overhead heavy camo beam (hung high)
-      const topBeam = new THREE.Mesh(new THREE.BoxGeometry(4.0, 1.2, 0.6), barrierWoodMat);
-      topBeam.position.set(0, 2.7, 0); topBeam.castShadow = true; group.add(topBeam);
-
-      // Dangling camo netting
-      const net = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.8), new THREE.MeshBasicMaterial({ color: 0x22361e, wireframe: true }));
-      net.position.set(0, 1.8, 0); group.add(net);
-
-      group.userData = {
-        type: 'SLIDE_UNDER', // must slide under!
-        lane: lane,
-        minY: 1.2,
-        maxY: 3.4,
-        radius: 1.6
-      };
-      return group;
-    }
-
-    function createSpikeBarrier(lane) {
-      const group = new THREE.Group();
-      group.position.set(LANES[lane], 0, 0);
-
-      // Czech hedgehog / spiked wire barricade
-      const b1 = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 3.4), razorMat);
-      b1.rotation.y = 0.7; b1.position.y = 0.9; b1.castShadow = true; group.add(b1);
-      const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 3.4), razorMat);
-      b2.rotation.y = -0.7; b2.position.y = 0.9; b2.castShadow = true; group.add(b2);
-
-      // Razor wire coils
-      const coil = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.1, 6, 16), razorMat);
-      coil.position.y = 0.9; coil.castShadow = true; group.add(coil);
-
-      group.userData = {
-        type: 'AVOID_OR_JUMP',
-        lane: lane,
-        minY: 0,
-        maxY: 1.8,
-        radius: 1.6
-      };
-      return group;
-    }
-
-    function createMilitantBunker(lane) {
-      const group = new THREE.Group();
-      group.position.set(LANES[lane], 0, 0);
-
-      // Concrete sandbag bunker with militant shooter dummy
-      const bunker = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.6, 1.4), new THREE.MeshStandardMaterial({ color: 0x6e6452, roughness: 0.9 }));
-      bunker.position.y = 0.8; bunker.castShadow = true; group.add(bunker);
-
-      const hostileHead = new THREE.Mesh(new THREE.SphereGeometry(0.38, 8, 8), new THREE.MeshStandardMaterial({ color: 0x222222 }));
-      hostileHead.position.set(0, 1.8, 0); group.add(hostileHead);
-
-      group.userData = {
-        type: 'TALL_BLOCK', // must change lane (too tall to jump)
-        lane: lane,
-        minY: 0,
-        maxY: 2.8,
-        radius: 1.7
-      };
-      return group;
-    }
-
-    // COLLECTIBLES & POWER-UPS BUILDERS
-    function createMedal(lane, y = 1.2) {
-      const group = new THREE.Group();
-      group.position.set(LANES[lane], y, 0);
-
-      // Shourya Chakra military medal: 8-pointed star coin
-      const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.12, 10), medalMat);
-      coin.rotation.x = Math.PI / 2; coin.castShadow = true; group.add(coin);
-
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.05, 6, 12), medalMat);
-      group.add(rim);
-
-      group.userData = { type: 'COIN', lane: lane, radius: 1.4 };
-      return group;
-    }
-
-    function createPowerupItem(lane, kind) {
-      const group = new THREE.Group();
-      group.position.set(LANES[lane], 1.4, 0);
-
-      if (kind === 'TIRANGA') {
-        // Glowing Tiranga Flag Emblem Box
-        const flagBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.7, 0.3), new THREE.MeshStandardMaterial({
-          color: 0xff9933, emissive: 0xff7700, emissiveIntensity: 0.6
-        }));
-        group.add(flagBox);
-        const halo = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.9, 16), flagAuraMat);
-        group.add(halo);
-      } else if (kind === 'MAGNET') {
-        // Horseshoe SF Magnet
-        const mag = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.14, 8, 12, Math.PI), magnetMat);
-        mag.rotation.z = Math.PI; group.add(mag);
-      } else if (kind === 'BOOTS') {
-        // Tactical Super Jump Wings
-        const boots = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.8, 6), new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0369a1, emissiveIntensity: 0.5 }));
-        boots.rotation.x = Math.PI; group.add(boots);
-      }
-
-      group.userData = { type: 'POWERUP', kind: kind, lane: lane, radius: 1.6 };
-      return group;
-    }
-
-    /* =====================================================================
-     * SPAWNER ENGINE (PROGRESSIVE PROCEDURAL GENERATION)
-     * ===================================================================== */
-    let nextSpawnZ = 45;
-
-    function spawnNextPattern() {
-      // Pick 1 or 2 occupied lanes to always leave at least one lane solvable
-      const openLane = Math.floor(Math.random() * 3);
-      const obstacleTypes = ['LOG', 'SLIDE_ARCH', 'SPIKE', 'BUNKER'];
-
-      for (let l = 0; l < 3; l++) {
-        if (l === openLane) {
-          // Open lane: spawn trail of golden Shourya medals
-          for (let step = -4; step <= 4; step += 3.5) {
-            const m = createMedal(l, 1.2);
-            m.position.z = nextSpawnZ + step;
-            scene.add(m); activeCollectibles.push(m);
-          }
-        } else {
-          // Other lanes: obstacles or powerups
-          if (Math.random() < 0.75) {
-            const pick = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-            let obs;
-            if (pick === 'LOG') obs = createFallenLog(l);
-            else if (pick === 'SLIDE_ARCH') obs = createHighBarricade(l);
-            else if (pick === 'SPIKE') obs = createSpikeBarrier(l);
-            else obs = createMilitantBunker(l);
-
-            obs.position.z = nextSpawnZ;
-            scene.add(obs); activeObstacles.push(obs);
-          } else if (Math.random() < 0.35) {
-            // Powerup drop
-            const kinds = ['TIRANGA', 'MAGNET', 'BOOTS'];
-            const p = createPowerupItem(l, kinds[Math.floor(Math.random() * kinds.length)]);
-            p.position.z = nextSpawnZ;
-            scene.add(p); activeCollectibles.push(p);
-          }
-        }
-      }
-
-      // Spacing compresses slightly as speed rises
-      const spacing = Math.max(34, 52 - (STATE.speed - CONFIG.baseSpeed) * 0.4);
-      nextSpawnZ += spacing;
-    }
-
-    // Pre-populate forward obstacles
-    for (let i = 0; i < 7; i++) { spawnNextPattern(); }
-
-    /* =====================================================================
-     * CONTROLS & GESTURE SYSTEM
-     * ===================================================================== */
-    function changeLane(direction) {
-      if (!STATE.started || STATE.dead) return;
-      sfx.init();
-      const target = THREE.MathUtils.clamp(STATE.currentLane + direction, 0, 2);
-      if (target !== STATE.currentLane) {
-        STATE.currentLane = target;
-        sfx.playStep();
-      }
-    }
-
-    function triggerJump() {
-      if (!STATE.started || STATE.dead || !STATE.isGrounded) return;
-      sfx.init();
-      const isSuper = STATE.superJumpTime > 0;
-      STATE.velY = isSuper ? CONFIG.highJumpSpeed : CONFIG.jumpSpeed;
-      STATE.isGrounded = false;
-      STATE.isSliding = false; // jump cancels slide
-      sfx.playJump();
-    }
-
-    function triggerSlide() {
-      if (!STATE.started || STATE.dead) return;
-      sfx.init();
-      if (!STATE.isGrounded) {
-        // Fast dive down to ground
-        STATE.velY = -35;
-      }
-      STATE.isSliding = true;
-      STATE.slideTimer = CONFIG.slideDuration;
-      sfx.playSlide();
-    }
-
-    // Keyboard controls
-    window.addEventListener('keydown', e => {
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
-      if (e.code === 'ArrowLeft' || e.code === 'KeyA') changeLane(-1);
-      if (e.code === 'ArrowRight' || e.code === 'KeyD') changeLane(1);
-      if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') triggerJump();
-      if (e.code === 'ArrowDown' || e.code === 'KeyS') triggerSlide();
-    });
-
-    // Touch Swipe gesture support
-    let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
-    window.addEventListener('touchstart', e => {
-      const t = e.changedTouches[0];
-      touchStartX = t.clientX; touchStartY = t.clientY; touchStartTime = performance.now();
-    }, { passive: true });
-
-    window.addEventListener('touchend', e => {
-      const t = e.changedTouches[0];
-      const dx = t.clientX - touchStartX;
-      const dy = t.clientY - touchStartY;
-      const dt = performance.now() - touchStartTime;
-
-      if (Math.abs(dx) > 30 || Math.abs(dy) > 30) {
-        if (Math.abs(dx) > Math.abs(dy)) {
-          if (dx > 0) changeLane(1); else changeLane(-1);
-        } else {
-          if (dy < 0) triggerJump(); else triggerSlide();
-        }
-      }
-    }, { passive: true });
-
-    // On-screen buttons
-    document.getElementById('m-btn-left').addEventListener('click', () => changeLane(-1));
-    document.getElementById('m-btn-right').addEventListener('click', () => changeLane(1));
-    document.getElementById('m-btn-jump').addEventListener('click', triggerJump);
-    document.getElementById('m-btn-slide').addEventListener('click', triggerSlide);
-
-    // Audio toggle
-    const audioBtn = document.getElementById('btn-audio-toggle');
-    audioBtn.addEventListener('click', () => {
-      sfx.init();
-      sfx.enabled = !sfx.enabled;
-      audioBtn.textContent = sfx.enabled ? '🔊 SFX ON' : '🔇 SFX OFF';
-    });
-
-    /* =====================================================================
-     * PARTICLES & SPECIAL EFFECTS
-     * ===================================================================== */
-    function spawnDustParticle(pos) {
-      const p = new THREE.Mesh(
-        new THREE.SphereGeometry(0.12, 4, 4),
-        new THREE.MeshBasicMaterial({ color: 0x8a927c, transparent: true, opacity: 0.6 })
+  }
+
+  function box(w, h, d, material, x = 0, y = 0, z = 0) {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(w, h, d), material
+    );
+    mesh.position.set(x, y, z);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }
+
+  function createWorld() {
+    const soil = mat(0x514c35);
+    const road = mat(0x625c43);
+    const edge = mat(0x777052);
+    const line = mat(0xb6a878);
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(180, 250), soil
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.set(0, -0.12, -80);
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const track = new THREE.Mesh(
+      new THREE.PlaneGeometry(9, 240), road
+    );
+    track.rotation.x = -Math.PI / 2;
+    track.position.set(0, -0.04, -80);
+    track.receiveShadow = true;
+    scene.add(track);
+
+    [-4.55, 4.55].forEach(x => {
+      const strip = new THREE.Mesh(
+        new THREE.BoxGeometry(0.13, 0.03, 240), edge
       );
-      p.position.copy(pos);
-      scene.add(p);
-      activeParticles.push({
-        mesh: p,
-        vel: new THREE.Vector3((Math.random() - 0.5) * 1.5, Math.random() * 1.2, -STATE.speed * 0.4),
-        life: 0.35, maxLife: 0.35
-      });
+      strip.position.set(x, 0, -80);
+      scene.add(strip);
+    });
+
+    // Small, irregular road markers
+    for (let z = 8; z > -220; z -= 7) {
+      const marker = new THREE.Mesh(
+        new THREE.BoxGeometry(0.055, 0.02, 1.8), line
+      );
+      marker.position.set(0, 0.005, z);
+      scene.add(marker);
     }
 
-    function spawnCoinSparkle(pos) {
-      for (let i = 0; i < 7; i++) {
-        const sp = new THREE.Mesh(
-          new THREE.SphereGeometry(0.1, 4, 4),
-          new THREE.MeshBasicMaterial({ color: 0xfef08a })
+    // Distant hills
+    const hillMat = mat(0x52694d);
+    for (let i = 0; i < 16; i++) {
+      const hill = new THREE.Mesh(
+        new THREE.SphereGeometry(1, 10, 8), hillMat
+      );
+      hill.scale.set(9 + Math.random() * 9, 4 + Math.random() * 5, 7);
+      hill.position.set(
+        (Math.random() < 0.5 ? -1 : 1) * (17 + Math.random() * 18),
+        -1.5,
+        -25 - Math.random() * 150
+      );
+      scene.add(hill);
+    }
+  }
+
+  function createTree(x, z, scale = 1) {
+    const tree = new THREE.Group();
+    tree.position.set(x, 0, z);
+    tree.scale.setScalar(scale);
+
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.18, 0.32, 2.7, 7),
+      mat(0x51402a)
+    );
+    trunk.position.y = 1.35;
+    trunk.castShadow = true;
+    tree.add(trunk);
+
+    const greens = [0x263e27, 0x344c2c, 0x405738, 0x2d482b];
+    for (let i = 0; i < 4; i++) {
+      const crown = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(1.25 - i * 0.1, 1),
+        mat(greens[Math.floor(Math.random() * greens.length)])
+      );
+      crown.position.set(
+        (Math.random() - 0.5) * 0.65,
+        2.5 + i * 0.45,
+        (Math.random() - 0.5) * 0.5
+      );
+      crown.scale.set(1.05, 0.85, 1);
+      crown.castShadow = true;
+      tree.add(crown);
+    }
+
+    scene.add(tree);
+    scenery.push(tree);
+  }
+
+  function createRock(x, z, scale = 1) {
+    const rock = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.8, 0),
+      mat(0x656553)
+    );
+    rock.position.set(x, 0.35 * scale, z);
+    rock.scale.set(scale * 1.2, scale * 0.75, scale);
+    rock.rotation.set(Math.random(), Math.random(), Math.random());
+    rock.castShadow = true;
+    scene.add(rock);
+    scenery.push(rock);
+  }
+
+  function createScenery() {
+    for (let z = 12; z > -210; z -= 6 + Math.random() * 5) {
+      createTree(-7 - Math.random() * 8, z, 0.8 + Math.random() * 0.8);
+      createTree(7 + Math.random() * 8, z - 3, 0.8 + Math.random() * 0.8);
+
+      if (Math.random() < 0.5) {
+        createRock(-5.5 - Math.random() * 3, z - 2, 0.5 + Math.random());
+      }
+      if (Math.random() < 0.5) {
+        createRock(5.5 + Math.random() * 3, z - 4, 0.5 + Math.random());
+      }
+    }
+
+    // Fern-like roadside plants
+    for (let i = 0; i < 65; i++) {
+      const side = Math.random() < 0.5 ? -1 : 1;
+      const plant = new THREE.Group();
+      plant.position.set(side * (5 + Math.random() * 5), 0, 10 - Math.random() * 200);
+
+      for (let j = 0; j < 5; j++) {
+        const leaf = new THREE.Mesh(
+          new THREE.ConeGeometry(0.13, 0.9, 5),
+          mat(0x526c38)
         );
-        sp.position.copy(pos);
-        scene.add(sp);
-        const a = Math.random() * Math.PI * 2;
-        activeParticles.push({
-          mesh: sp,
-          vel: new THREE.Vector3(Math.cos(a) * 4, Math.random() * 4 + 2, Math.sin(a) * 4),
-          life: 0.4, maxLife: 0.4
-        });
+        leaf.position.set((Math.random() - 0.5) * 0.5, 0.38, 0);
+        leaf.rotation.z = (Math.random() - 0.5) * 1.3;
+        plant.add(leaf);
       }
+      scene.add(plant);
+      scenery.push(plant);
+    }
+  }
+
+  function createPlayer() {
+    player = new THREE.Group();
+
+    const uniform = mat(0x596446);
+    const darkUniform = mat(0x343e2c);
+    const skin = mat(0xb78b65);
+    const boots = mat(0x262720);
+    const helmetMat = mat(0x414b31);
+
+    // Boots and legs
+    for (let i = 0; i < 2; i++) {
+      const leg = new THREE.Group();
+      const pants = box(0.25, 0.62, 0.28, darkUniform, 0, 0.55, 0);
+      const boot = box(0.29, 0.18, 0.42, boots, 0, 0.13, -0.05);
+      leg.add(pants, boot);
+      leg.position.set(i === 0 ? -0.2 : 0.2, 0, 0);
+      player.add(leg);
+      playerLegs.push(leg);
     }
 
-    function spawnExplosion(pos) {
-      for (let i = 0; i < 16; i++) {
-        const p = new THREE.Mesh(
-          new THREE.DodecahedronGeometry(0.35, 1),
-          new THREE.MeshBasicMaterial({ color: Math.random() > 0.5 ? 0xff9933 : 0x138808, transparent: true, opacity: 0.9 })
+    // Body
+    playerBody = new THREE.Group();
+    playerBody.add(box(0.67, 0.78, 0.36, uniform, 0, 1.18, 0));
+    playerBody.add(box(0.72, 0.18, 0.4, darkUniform, 0, 0.85, 0));
+    playerBody.add(box(0.38, 0.42, 0.15, darkUniform, 0, 1.28, 0.23));
+
+    // Head and helmet
+    playerBody.add(box(0.38, 0.42, 0.34, skin, 0, 1.86, 0));
+    playerBody.add(box(0.46, 0.19, 0.41, helmetMat, 0, 2.08, 0));
+    playerBody.add(box(0.5, 0.06, 0.43, helmetMat, 0, 2.0, 0.02));
+
+    // Backpack
+    playerBody.add(box(0.43, 0.55, 0.24, darkUniform, 0, 1.35, -0.29));
+
+    // Arms
+    for (let side of [-1, 1]) {
+      const arm = box(0.22, 0.65, 0.23, uniform, side * 0.48, 1.22, 0);
+      arm.rotation.z = side * -0.12;
+      playerBody.add(arm);
+    }
+
+    player.add(playerBody);
+    player.position.set(0, 0, 0);
+    scene.add(player);
+  }
+
+  function createObstacles() {
+    const wood = mat(0x745032);
+    const metal = mat(0x4a5046);
+    const rockMat = mat(0x696a58);
+    const sandbag = mat(0x8a805e);
+
+    obstacleMaterials.barrier = wood;
+    obstacleMaterials.crate = metal;
+    obstacleMaterials.rock = rockMat;
+    obstacleMaterials.bags = sandbag;
+
+    for (let i = 0; i < 7; i++) {
+      spawnObstacle(-32 - i * 24 - Math.random() * 12);
+    }
+  }
+
+  function spawnObstacle(z) {
+    const typeRoll = Math.random();
+    const type = typeRoll < 0.35 ? 'barrier'
+               : typeRoll < 0.65 ? 'rock'
+               : typeRoll < 0.82 ? 'crate' : 'bags';
+
+    const group = new THREE.Group();
+    const material = obstacleMaterials[type];
+
+    if (type === 'barrier') {
+      group.add(box(2.0, 0.2, 0.3, material, 0, 0.95, 0));
+      group.add(box(0.18, 1.05, 0.25, material, -0.75, 0.52, 0));
+      group.add(box(0.18, 1.05, 0.25, material, 0.75, 0.52, 0));
+      // Yellow warning stripe
+      group.add(box(1.8, 0.07, 0.32, mat(0xd0b24e), 0, 0.96, 0.015));
+    } else if (type === 'rock') {
+      const r = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.85, 0), material
+      );
+      r.position.y = 0.58;
+      r.scale.set(1.05, 0.8, 0.9);
+      r.castShadow = true;
+      group.add(r);
+    } else if (type === 'crate') {
+      group.add(box(1.15, 1.15, 1.0, material, 0, 0.58, 0));
+      const stripe = box(1.18, 0.12, 1.03, mat(0x8b8a70), 0, 0.58, 0);
+      group.add(stripe);
+    } else {
+      for (let i = -1; i <= 1; i++) {
+        const bag = new THREE.Mesh(
+          new THREE.SphereGeometry(0.4, 10, 8), material
         );
-        p.position.copy(pos); scene.add(p);
-        const a = Math.random() * Math.PI * 2;
-        activeParticles.push({
-          mesh: p,
-          vel: new THREE.Vector3(Math.cos(a) * (6 + Math.random() * 8), Math.random() * 8 + 3, Math.sin(a) * (6 + Math.random() * 8)),
-          life: 0.65, maxLife: 0.65
-        });
+        bag.scale.set(1.2, 0.7, 0.85);
+        bag.position.set(i * 0.65, 0.35, 0);
+        bag.castShadow = true;
+        group.add(bag);
       }
     }
 
-    /* =====================================================================
-     * GAME OVER & RESET
-     * ===================================================================== */
-    function gameOver() {
-      STATE.dead = true;
-      sfx.playCrash();
+    const laneIndex = Math.floor(Math.random() * 3);
+    group.position.set(laneX[laneIndex], 0, z);
+    group.userData = { type, laneIndex, hit: false };
+    scene.add(group);
+    obstacles.push(group);
+  }
 
-      // Hit flash visual
-      const hf = document.getElementById('hit-flash');
-      hf.style.opacity = '1';
-      setTimeout(() => hf.style.opacity = '0', 250);
+  function bindControls() {
+    $('left').addEventListener('pointerdown', () => moveLane(-1));
+    $('right').addEventListener('pointerdown', () => moveLane(1));
+    $('jump').addEventListener('pointerdown', jump);
+    $('slide').addEventListener('pointerdown', slide);
 
-      // Save high score
-      if (Math.round(STATE.distance) > STATE.highScore) {
-        STATE.highScore = Math.round(STATE.distance);
-        localStorage.setItem('tiranga_run_high', STATE.highScore.toString());
+    addEventListener('keydown', e => {
+      if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) {
+        e.preventDefault();
       }
+      if (e.repeat) return;
+      if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') moveLane(-1);
+      if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') moveLane(1);
+      if (e.key === 'ArrowUp' || e.key === ' ') jump();
+      if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') slide();
+    });
+  }
 
-      const totalScore = Math.round(STATE.distance * 10 + STATE.medals * 50);
-      document.getElementById('final-dist').textContent = `${Math.round(STATE.distance)} M`;
-      document.getElementById('final-medals').textContent = `${STATE.medals}`;
-      document.getElementById('final-score').textContent = `${totalScore} PTS`;
-      document.getElementById('high-dist').textContent = `${STATE.highScore} M`;
+  function moveLane(direction) {
+    if (!running) return;
+    lane = Math.max(0, Math.min(2, lane + direction));
+  }
 
-      setTimeout(() => {
-        document.getElementById('end-modal').style.display = 'flex';
-      }, 700);
+  function jump() {
+    if (!running || playerY > 0.02 || sliding) return;
+    jumpVelocity = 8.5;
+  }
+
+  function slide() {
+    if (!running || playerY > 0.05) return;
+    sliding = true;
+    slideTime = 0.75;
+  }
+
+  function startGame() {
+    score = 0;
+    health = 100;
+    elapsed = 0;
+    lane = 1;
+    playerY = 0;
+    jumpVelocity = 0;
+    sliding = false;
+    gameOver = false;
+    running = true;
+    spawnTimer = 0;
+
+    obstacles.forEach(o => scene.remove(o));
+    obstacles = [];
+    for (let i = 0; i < 7; i++) {
+      spawnObstacle(-30 - i * 25 - Math.random() * 10);
     }
 
-    document.getElementById('btn-start').addEventListener('click', () => {
-      sfx.init();
-      document.getElementById('start-modal').style.display = 'none';
-      STATE.started = true;
-    });
+    player.position.set(0, 0, 0);
+    $('score').textContent = '0';
+    $('health').textContent = '100';
+    $('message').style.display = 'none';
+    clock.getDelta();
+  }
 
-    document.getElementById('btn-restart').addEventListener('click', () => {
-      location.reload();
-    });
+  function endGame() {
+    if (gameOver) return;
+    running = false;
+    gameOver = true;
+    $('message').style.display = 'flex';
+    $('message').innerHTML = `
+      <div class="dialog">
+        <h1>MISSION FAILED</h1>
+        <p>Final score: <strong>${Math.floor(score)}</strong></p>
+        <p>You fought bravely, Commando. Try again!</p>
+        <button id="restart">RESTART MISSION</button>
+      </div>`;
+    $('restart').addEventListener('click', startGame);
+  }
 
-    /* =====================================================================
-     * MAIN GAME ANIMATION LOOP
-     * ===================================================================== */
-    let lastTime = performance.now();
-    let runCycle = 0;
+  function animate() {
+    const dt = Math.min(clock.getDelta(), 0.035);
 
-    function animate() {
-      requestAnimationFrame(animate);
-      const now = performance.now();
-      const delta = Math.min((now - lastTime) / 1000, 0.1);
-      lastTime = now;
+    if (running) update(dt);
+    renderer.render(scene, camera);
+  }
 
-      if (STATE.started && !STATE.dead) {
-        // Accelerate speed gradually over distance
-        STATE.speed = Math.min(CONFIG.maxSpeed, STATE.speed + CONFIG.accel * delta);
-        const forwardStep = STATE.speed * delta;
-        STATE.distance += forwardStep;
-        playerGroup.position.z += forwardStep;
+  function update(dt) {
+    elapsed += dt;
+    const speed = Math.min(20, 11 + elapsed * 0.16);
+    score += dt * speed * 1.7;
 
-        // Footstep sound rhythm based on run distance
-        if (STATE.isGrounded && STATE.distance - STATE.lastStepDist > 3.6) {
-          sfx.playStep();
-          STATE.lastStepDist = STATE.distance;
-          spawnDustParticle(new THREE.Vector3(STATE.playerX - 0.3, 0.1, playerGroup.position.z));
-        }
+    $('score').textContent = Math.floor(score);
+    $('speed').textContent = (speed / 11).toFixed(1);
 
-        // Horizontal Lane Interpolation
-        const targetX = LANES[STATE.currentLane];
-        STATE.playerX = THREE.MathUtils.lerp(STATE.playerX, targetX, CONFIG.laneSwitchSpeed * delta);
-        playerGroup.position.x = STATE.playerX;
+    // Smooth lane switching
+    player.position.x += (laneX[lane] - player.position.x) *
+                         Math.min(1, dt * 12);
 
-        // Commando Lean / Tilt when dodging
-        const tiltAngle = (targetX - STATE.playerX) * -0.16;
-        commandoRoot.rotation.z = THREE.MathUtils.lerp(commandoRoot.rotation.z, tiltAngle, 0.25);
-
-        // Vertical Physics (Jump / Fall)
-        if (!STATE.isGrounded) {
-          STATE.velY += CONFIG.gravity * delta;
-          STATE.playerY += STATE.velY * delta;
-          if (STATE.playerY <= 0) {
-            STATE.playerY = 0;
-            STATE.velY = 0;
-            STATE.isGrounded = true;
-          }
-        }
-        playerGroup.position.y = STATE.playerY;
-
-        // Slide State Timer
-        if (STATE.isSliding) {
-          STATE.slideTimer -= delta;
-          if (STATE.slideTimer <= 0) STATE.isSliding = false;
-        }
-
-        // Animation poses: Running, Jumping, Tactical Slide
-        if (STATE.isSliding) {
-          // Combat Slide pose: crouched low, legs extended forward, torso flat
-          commandoRoot.position.y = -0.55;
-          commandoRoot.rotation.x = -1.15; // lean back on knee slide
-          leftLeg.rotation.x = 1.4;
-          rightLeg.rotation.x = 1.2;
-          leftArm.rotation.x = -0.8;
-          rightArm.rotation.x = -0.8;
-        } else if (!STATE.isGrounded) {
-          // Tactical Airborne Tuck pose
-          commandoRoot.position.y = 0;
-          commandoRoot.rotation.x = 0.2;
-          leftLeg.rotation.x = -0.8;
-          rightLeg.rotation.x = -0.4;
-          leftArm.rotation.x = 1.2;
-          rightArm.rotation.x = 1.0;
-        } else {
-          // Dynamic Spec-Ops Running Cycle
-          commandoRoot.position.y = 0;
-          commandoRoot.rotation.x = 0.15; // forward aggressive run tilt
-          runCycle += delta * (STATE.speed * 0.42);
-          const legSwing = Math.sin(runCycle) * 0.85;
-          leftLeg.rotation.x = legSwing;
-          rightLeg.rotation.x = -legSwing;
-          leftArm.rotation.x = -legSwing * 0.9;
-          rightArm.rotation.x = legSwing * 0.9;
-        }
-
-        // Power-ups countdown & logic
-        if (STATE.invincibleTime > 0) {
-          STATE.invincibleTime -= delta;
-          auraMat1.opacity = 0.75; auraMat2.opacity = 0.9;
-          auraGroup.rotation.y += delta * 6;
-          document.getElementById('invincible-vignette').style.opacity = '1';
-        } else {
-          auraMat1.opacity = 0; auraMat2.opacity = 0;
-          document.getElementById('invincible-vignette').style.opacity = '0';
-        }
-
-        if (STATE.magnetTime > 0) STATE.magnetTime -= delta;
-        if (STATE.superJumpTime > 0) STATE.superJumpTime -= delta;
-
-        // Update Active Power-up Meter
-        const maxActive = Math.max(STATE.invincibleTime, STATE.magnetTime, STATE.superJumpTime);
-        const pWrap = document.getElementById('powerup-bar-wrap');
-        if (maxActive > 0) {
-          pWrap.style.display = 'block';
-          if (STATE.invincibleTime > 0) {
-            document.getElementById('p-title').textContent = '🇮🇳 TIRANGA AURA (INVINCIBLE)';
-            document.getElementById('p-timer').textContent = `${STATE.invincibleTime.toFixed(1)}s`;
-            document.getElementById('p-fill').style.width = `${(STATE.invincibleTime / 6) * 100}%`;
-          } else if (STATE.magnetTime > 0) {
-            document.getElementById('p-title').textContent = '🧲 MEDAL MAGNET';
-            document.getElementById('p-timer').textContent = `${STATE.magnetTime.toFixed(1)}s`;
-            document.getElementById('p-fill').style.width = `${(STATE.magnetTime / 8) * 100}%`;
-          } else {
-            document.getElementById('p-title').textContent = '⚡ JET SUPER JUMP';
-            document.getElementById('p-timer').textContent = `${STATE.superJumpTime.toFixed(1)}s`;
-            document.getElementById('p-fill').style.width = `${(STATE.superJumpTime / 8) * 100}%`;
-          }
-        } else {
-          pWrap.style.display = 'none';
-        }
-
-        // Update HUD Values
-        document.getElementById('hud-distance').textContent = Math.round(STATE.distance);
-        document.getElementById('hud-medals').textContent = STATE.medals;
-        const speedMult = (STATE.speed / CONFIG.baseSpeed).toFixed(1);
-        document.getElementById('hud-mult').textContent = `${speedMult}X SPEED`;
-
-        // Recycle track chunks ahead
-        chunks.forEach(chunk => {
-          if (chunk.position.z + CHUNK_LENGTH < playerGroup.position.z - 20) {
-            chunk.position.z += TOTAL_CHUNKS * CHUNK_LENGTH;
-          }
-        });
-
-        // Spawn new patterns ahead
-        if (nextSpawnZ < playerGroup.position.z + 180) {
-          spawnNextPattern();
-        }
-
-        // Check Collectibles (Coins & Power-ups)
-        for (let i = activeCollectibles.length - 1; i >= 0; i--) {
-          const item = activeCollectibles[i];
-          // Spin item
-          item.rotation.y += delta * 3.5;
-
-          // Magnet Attraction Effect
-          if (STATE.magnetTime > 0 && item.userData.type === 'COIN') {
-            const dist = item.position.distanceTo(playerGroup.position);
-            if (dist < 22) {
-              item.position.lerp(new THREE.Vector3(playerGroup.position.x, playerGroup.position.y + 1.2, playerGroup.position.z), 0.16);
-            }
-          }
-
-          // Hit Test
-          const pz = playerGroup.position.z;
-          const dz = item.position.z - pz;
-          const dx = item.position.x - playerGroup.position.x;
-          const dy = item.position.y - playerGroup.position.y;
-          const dist2D = Math.sqrt(dx * dx + dz * dz);
-
-          if (dist2D < item.userData.radius && Math.abs(dy) < 2.0) {
-            if (item.userData.type === 'COIN') {
-              STATE.medals++;
-              sfx.playCoin();
-              spawnCoinSparkle(item.position);
-            } else if (item.userData.type === 'POWERUP') {
-              sfx.playPowerup();
-              if (item.userData.kind === 'TIRANGA') STATE.invincibleTime = 6.0;
-              else if (item.userData.kind === 'MAGNET') STATE.magnetTime = 8.0;
-              else if (item.userData.kind === 'BOOTS') STATE.superJumpTime = 8.0;
-              spawnExplosion(item.position);
-            }
-            scene.remove(item);
-            activeCollectibles.splice(i, 1);
-            continue;
-          }
-
-          // Clean up past items
-          if (item.position.z < pz - 15) {
-            scene.remove(item);
-            activeCollectibles.splice(i, 1);
-          }
-        }
-
-        // Check Obstacles Collisions
-        for (let i = activeObstacles.length - 1; i >= 0; i--) {
-          const obs = activeObstacles[i];
-          const pz = playerGroup.position.z;
-          const dz = Math.abs(obs.position.z - pz);
-          const dx = Math.abs(obs.position.x - playerGroup.position.x);
-
-          if (dz < 1.3 && dx < 1.35) {
-            // If in Tiranga invincibility aura, SMASH through obstacles!
-            if (STATE.invincibleTime > 0) {
-              sfx.playCrash();
-              spawnExplosion(obs.position);
-              scene.remove(obs);
-              activeObstacles.splice(i, 1);
-              continue;
-            }
-
-            // Normal collision resolution based on obstacle type
-            const u = obs.userData;
-            const playerHeight = STATE.isSliding ? 0.7 : 2.2;
-            const py = STATE.playerY;
-
-            let hit = false;
-            if (u.type === 'JUMP_OVER') {
-              // Player must jump above obstacle height
-              if (py < u.maxY - 0.2) hit = true;
-            } else if (u.type === 'SLIDE_UNDER') {
-              // Player must slide under!
-              if (!STATE.isSliding) hit = true;
-            } else if (u.type === 'AVOID_OR_JUMP') {
-              if (py < u.maxY) hit = true;
-            } else if (u.type === 'TALL_BLOCK') {
-              // Bunker/Roadblock cannot be jumped, must dodge
-              hit = true;
-            }
-
-            if (hit) {
-              gameOver();
-              break;
-            }
-          }
-
-          // Clean up past obstacles
-          if (obs.position.z < pz - 18) {
-            scene.remove(obs);
-            activeObstacles.splice(i, 1);
-          }
-        }
-
-        // Cinematic Third-person Following Camera with Speed FOV warp
-        const camTargetZ = playerGroup.position.z - 7.5;
-        const camTargetY = STATE.playerY * 0.4 + 4.2;
-        const camTargetX = STATE.playerX * 0.45;
-
-        camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.15);
-        camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTargetY, 0.15);
-        camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.35);
-
-        // Speed dynamic FOV warp
-        const targetFOV = 62 + (STATE.speed - CONFIG.baseSpeed) * 0.35 + (STATE.invincibleTime > 0 ? 10 : 0);
-        camera.fov = THREE.MathUtils.lerp(camera.fov, targetFOV, 0.08);
-        camera.updateProjectionMatrix();
-
-        camera.lookAt(STATE.playerX * 0.8, STATE.playerY * 0.6 + 1.8, playerGroup.position.z + 12);
-      } else if (STATE.dead) {
-        // Death stumble sequence: commando trips and slides forward
-        commandoRoot.rotation.x = THREE.MathUtils.lerp(commandoRoot.rotation.x, 1.5, 0.1);
-        commandoRoot.position.y = THREE.MathUtils.lerp(commandoRoot.position.y, -0.6, 0.1);
+    // Jump physics
+    if (jumpVelocity !== 0 || playerY > 0) {
+      playerY += jumpVelocity * dt;
+      jumpVelocity -= 22 * dt;
+      if (playerY <= 0) {
+        playerY = 0;
+        jumpVelocity = 0;
       }
-
-      // Update Floating Particles
-      for (let i = activeParticles.length - 1; i >= 0; i--) {
-        const p = activeParticles[i];
-        p.life -= delta;
-        p.mesh.position.addScaledVector(p.vel, delta);
-        if (p.mesh.material) p.mesh.material.opacity = Math.max(0, p.life / p.maxLife);
-        if (p.life <= 0) {
-          scene.remove(p.mesh);
-          activeParticles.splice(i, 1);
-        }
-      }
-
-      renderer.render(scene, camera);
     }
 
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    // Slide duration and character posture
+    if (sliding) {
+      slideTime -= dt;
+      if (slideTime <= 0) sliding = false;
+    }
 
-    animate();
-  </script>
-</body></html>
+    player.position.y = playerY;
+    playerBody.scale.y = sliding ? 0.55 : 1;
+    playerBody.position.y = sliding ? -0.35 : 0;
+
+    const runSwing = Math.sin(elapsed * 13) * 0.5;
+    playerLegs.forEach((leg, i) => {
+      leg.rotation.x = playerY > 0.1 ? -0.25 : runSwing * (i === 0 ? 1 : -1);
+    });
+    playerBody.rotation.z = (laneX[lane] - player.position.x) * -0.04;
+
+    // Obstacles approach the player
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+      const o = obstacles[i];
+      o.position.z += speed * dt;
+
+      const nearPlayer = Math.abs(o.position.z) < 1.15 &&
+                         Math.abs(o.position.x - player.position.x) < 1.05;
+
+      if (nearPlayer && !o.userData.hit) {
+        let avoided = false;
+        const type = o.userData.type;
+
+        if (type === 'barrier') {
+          avoided = playerY > 0.8;
+        } else if (type === 'bags') {
+          avoided = sliding;
+        } else {
+          avoided = playerY > 1.15;
+        }
+
+        if (!avoided) {
+          o.userData.hit = true;
+          health = Math.max(0, health - 25);
+          $('health').textContent = health;
+          damageFlash = 0.18;
+          if (health <= 0) endGame();
+        } else {
+          o.userData.hit = true;
+          score += 30;
+        }
+      }
+
+      if (o.position.z > 12) {
+        scene.remove(o);
+        obstacles.splice(i, 1);
+      }
+    }
+
+    // Spawn new obstacles at a steady interval
+    spawnTimer += dt;
+    if (spawnTimer > Math.max(0.75, 1.5 - elapsed * 0.004)) {
+      spawnTimer = 0;
+      spawnObstacle(-90 - Math.random() * 25);
+    }
+
+    // Subtle camera movement
+    camera.position.x += (player.position.x * 0.22 - camera.position.x) * dt * 2;
+    camera.position.y = 5.2 + playerY * 0.12;
+    camera.lookAt(player.position.x * 0.18, 1.1 + playerY * 0.15, -5);
+
+    if (damageFlash > 0) {
+      damageFlash -= dt;
+      renderer.setClearColor(0x6b2119);
+    } else {
+      renderer.setClearColor(0x82958a);
+    }
+  }
+
+  function onResize() {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.7));
+  }
+})();
+</script>
+</body>
+</html>
